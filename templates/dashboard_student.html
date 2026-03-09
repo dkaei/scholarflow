@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Student dashboard{% endblock %}
+{% block content %}
+<section class="hero-panel mb-4">
+  <span class="hero-panel__eyebrow">Student dashboard</span>
+  <h1 class="hero-panel__title">Welcome back, {{ user.display_name|default:user.username }}.</h1>
+  <p class="hero-panel__subtitle">Jump into your active courses and continue learning where you left off.</p>
+  <div class="hero-panel__actions">
+    <a class="button" href="{% url 'course-list' %}">Browse courses</a>
+    <a class="button button--ghost" href="{% url 'notification-list' %}">Notifications</a>
+  </div>
+</section>
+
+<section class="course-grid">
+  {% for e in enrolments %}
+    <article class="course-card">
+      <div class="course-card__top">
+        <div>
+          <h3 class="course-card__title">{{ e.course.title }}</h3>
+          <div class="course-card__meta">Teacher: {{ e.course.teacher.display_name|default:e.course.teacher.username }}</div>
+        </div>
+        <span class="badge good">Active</span>
+      </div>
+      <div class="course-card__actions">
+        <a class="button button--ghost" href="{% url 'course-detail' e.course.id %}">Open course</a>
+        <a class="button" href="{% url 'course-room' e.course.id %}">Study room</a>
+      </div>
+    </article>
+  {% empty %}
+    <article class="card"><div class="card-body">No active courses yet. Browse the course catalogue to request enrolment.</div></article>
+  {% endfor %}
+</section>
+{% endblock %}

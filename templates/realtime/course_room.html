@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }} · Study Room{% endblock %}
+{% block content %}
+<div class="my-4">
+  <div class="study-room-shell">
+    <aside class="study-room-panel">
+      <div class="study-room-panel__hero">
+        <div class="hero-panel__eyebrow" style="color: rgba(255,255,255,.84);">Study room</div>
+        <h2 style="margin: 8px 0 6px; font-size: 1.8rem;">{{ course.title }}</h2>
+        <p class="study-room-panel__meta mb-0">Real-time chat for the teacher and active students in this course.</p>
+      </div>
+      <div class="study-room-panel__stack">
+        <div class="card" style="box-shadow:none; border-radius:16px;"><div class="card-body" style="padding:16px;">
+          <h4 class="mb-2" style="font-size:1rem;">Quick actions</h4>
+          <div class="row">
+            <a class="button button--ghost" href="{% url 'course-detail' course.id %}">Back to course</a>
+            <button id="loadOlder" class="button button--ghost" type="button" {% if not oldest_id %}disabled{% endif %}>Load older</button>
+          </div>
+        </div></div>
+        <div class="card" style="box-shadow:none; border-radius:16px;"><div class="card-body" style="padding:16px;">
+          <h4 class="mb-2" style="font-size:1rem;">Room guidelines</h4>
+          <ul class="utility-list">
+            <li>Keep the conversation focused on the course.</li>
+            <li>Use the room for help, clarifications and peer discussion.</li>
+            <li>Recent messages are stored for continuity during study sessions.</li>
+          </ul>
+        </div></div>
+      </div>
+    </aside>
+
+    <section class="study-chat">
+      <div class="study-chat__header">
+        <div>
+          <h3 class="mb-1">Live conversation</h3>
+          <div class="text-muted small">Rate limit: 5 messages per 8 seconds.</div>
+        </div>
+        <span class="badge good">WebSocket connected</span>
+      </div>
+      <div id="log" class="study-chat__log" aria-live="polite">
+        {% for m in history %}
+          <div class="study-msg{% if m.sender_id == user.id %} is-self{% endif %}">
+            <div class="study-msg__meta">
+              <span class="study-msg__user">{{ m.sender.display_name|default:m.sender.username }}</span>
+              {% if m.sender.role == "TEACHER" %}<span class="type-pill video">Teacher</span>{% endif %}
+              <span>{{ m.created_at|date:"d M Y, H:i" }}</span>
+            </div>
+            <div>{{ m.text|linebreaksbr }}</div>
+          </div>
+        {% empty %}
+          <div class="viewer-placeholder">No messages yet. Start the conversation.</div>
+        {% endfor %}
+      </div>
+      <div id="typing" class="study-chat__typing">Someone is typing…</div>
+      <form id="chatForm" class="study-chat__composer">
+        <input id="chatInput" maxlength="1000" autocomplete="off" placeholder="Type a message for this study room…">
+        <button class="button" type="submit">Send</button>
+      </form>
+    </section>
+  </div>
+</div>
+<script>
+(function () {
+  const courseId = {{ course.id }};
+  const currentUser = {{ request.user.id }};
+  const log = document.getElementById('log');
+  const input = document.getElementById('chatInput');
+  const form = document.getElementById('chatForm');
+  const loadOlderBtn = document.getElementById('loadOlder');
+  const typingEl = document.getElementById('typing');
+  let oldestId = {% if oldest_id %}{{ oldest_id }}{% else %}null{% endif %};
+  let typingTimer = null;
+
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, function (match) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[match];
+    });
+  }
+
+  function formatTs(iso) {
+    if (!iso) return '';
+    const date = new Date(iso);
+    return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('en-GB');
+  }
+
+  function appendMessage(message, prepend=false) {
+    const div = document.createElement('div');
+    div.className = 'study-msg' + (message.sender_id === currentUser ? ' is-self' : '');
+    div.innerHTML = `
+      <div class="study-msg__meta">
+        <span class="study-msg__user">${escapeHtml(message.user)}</span>
+        ${String(message.role).toUpperCase() === 'TEACHER' ? '<span class="type-pill video">Teacher</span>' : ''}
+        <span>${escapeHtml(formatTs(message.created_at))}</span>
+      </div>
+      <div>${escapeHtml(message.text)}</div>`;
+
+    if (prepend) {
+      log.insertBefore(div, log.firstChild);
+    } else {
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+  }
+
+  const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  const socket = new WebSocket(`${protocol}://${window.location.host}/ws/courses/${courseId}/room/`);
+
+  socket.onmessage = function (event) {
+    const payload = JSON.parse(event.data);
+    if (payload.event === 'chat') {
+      typingEl.style.display = 'none';
+      appendMessage(payload.data);
+    }
+    if (payload.event === 'typing' && payload.sender_id !== currentUser) {
+      typingEl.style.display = 'block';
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(() => { typingEl.style.display = 'none'; }, 1200);
+    }
+  };
+
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    const text = (input.value || '').trim();
+    if (!text) return;
+    socket.send(JSON.stringify({ type: 'chat', text }));
+    input.value = '';
+  });
+
+  input.addEventListener('input', function () {
+    if (socket.readyState === 1) {
+      socket.send(JSON.stringify({ type: 'typing' }));
+    }
+  });
+
+  loadOlderBtn && loadOlderBtn.addEventListener('click', async function () {
+    if (!oldestId) return;
+    loadOlderBtn.disabled = true;
+    const response = await fetch(`/courses/${courseId}/room/older/?before=${oldestId}&limit=30`);
+    if (!response.ok) {
+      loadOlderBtn.disabled = false;
+      return;
+    }
+    const data = await response.json();
+    if (data.messages && data.messages.length) {
+      const previousHeight = log.scrollHeight;
+      data.messages.forEach((message) => appendMessage(message, true));
+      log.scrollTop = log.scrollHeight - previousHeight;
+    }
+    oldestId = data.next_before || null;
+    loadOlderBtn.disabled = !oldestId;
+  });
+
+  log.scrollTop = log.scrollHeight;
+})();
+</script>
+{% endblock %}

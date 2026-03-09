@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}{{ profile_user.display_name|default:profile_user.username }} · Profile{% endblock %}
+
+{% block content %}
+<div class="profile-shell my-4">
+  <section class="hero-panel mb-4">
+    <span class="hero-panel__eyebrow">{{ profile_user.get_role_display }} Profile</span>
+    <h1 class="hero-panel__title">{{ profile_user.display_name|default:profile_user.username }}</h1>
+    <p class="hero-panel__subtitle">
+      {% if profile_user.display_name %}@{{ profile_user.username }}<br>{% endif %}
+      {% if profile_user.email %}{{ profile_user.email }}{% endif %}
+    </p>
+
+    {% if request.user == profile_user %}
+    <div class="hero-panel__actions">
+      <a class="button button--ghost" href="{% url 'edit-profile' %}">Edit profile</a>
+    </div>
+    {% endif %}
+  </section>
+
+  <div class="grid cols2 mb-4">
+    <div class="card">
+      <div class="card-body">
+        <h3 class="mb-2">Bio</h3>
+        <div class="text-muted">
+          {% if profile_user.bio %}
+          {{ profile_user.bio|linebreaks }}
+          {% else %}
+          -
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="metric-card mb-2">
+        <div class="metric-card__label">Username</div>
+        <div class="metric-card__value" style="font-size:1.1rem;">{{ profile_user.username }}</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-card__label">Role</div>
+        <div class="metric-card__value" style="font-size:1.1rem;">{{ profile_user.get_role_display }}</div>
+      </div>
+    </div>
+  </div>
+
+  {% if request.user == profile_user and status_form %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Post a status update</h3>
+        <span class="text-muted small">Share a quick update with your profile visitors.</span>
+      </div>
+
+      <form method="post" enctype="multipart/form-data" class="status-composer">
+        {% csrf_token %}
+        {% for field in status_form %}
+        <div class="form-row">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% for error in field.errors %}
+          <div class="help text-danger">{{ error }}</div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+        <div class="row mt-4">
+          <button class="button" type="submit">Post update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">Status updates</h3>
+        <span class="text-muted small">{{ status_updates|length }} update{{ status_updates|length|pluralize }}</span>
+      </div>
+
+      {% if status_updates %}
+      <div class="status-feed">
+        {% for status in status_updates %}
+        <article class="status-card">
+          <div class="status-card__head">
+            <div class="status-card__author">
+              <div class="status-card__avatar">
+                {{ status.user.display_name|default:status.user.username|slice:":1"|upper }}
+              </div>
+              <div>
+                <div class="status-card__name">
+                  {{ status.user.display_name|default:status.user.username }}
+                </div>
+                <div class="status-card__meta">
+                  {{ status.created_at|date:"d M Y, H:i" }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="status-card__body">
+            <div class="status-card__text">{{ status.text|linebreaks }}</div>
+
+            {% if status.image %}
+            <div class="status-card__image-wrap">
+              <img src="{{ status.image.url }}" alt="Status image" class="status-card__image">
+            </div>
+            {% endif %}
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state-box">No status updates yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if profile_user.role == "STUDENT" %}
+  <div class="card">
+    <div class="card-body">
+      <h3 class="mb-3">Active courses</h3>
+      {% if active_courses %}
+      <div class="course-grid">
+        {% for enrolment in active_courses %}
+        <article class="course-card">
+          <div class="course-card__top">
+            <div>
+              <h3 class="course-card__title">{{ enrolment.course.title }}</h3>
+              <div class="course-card__meta">
+                Teacher: {{ enrolment.course.teacher.display_name|default:enrolment.course.teacher.username }}
+              </div>
+            </div>
+            <span class="badge good">Active</span>
+          </div>
+          <div class="course-card__actions">
+            <a class="button button--ghost" href="{% url 'course-detail' enrolment.course.id %}">Open course</a>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state-box">No active courses yet.</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if profile_user.role == "TEACHER" %}
+  <div class="card">
+    <div class="card-body">
+      <h3 class="mb-3">Courses taught</h3>
+      {% if teaching_courses %}
+      <div class="course-grid">
+        {% for course in teaching_courses %}
+        <article class="course-card">
+          <div class="course-card__top">
+            <div>
+              <h3 class="course-card__title">{{ course.title }}</h3>
+              <div class="course-card__meta">{{ course.created_at|date:"d M Y, H:i" }}</div>
+            </div>
+            <span class="badge good">Teacher</span>
+          </div>
+          <div class="course-card__actions">
+            <a class="button button--ghost" href="{% url 'course-detail' course.id %}">Open course</a>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state-box">No courses created yet.</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+{% block title %}Manage {{ course.title }}{% endblock %}
+{% block content %}
+<div class="course-manage-page my-4">
+  <section class="manage-header mb-4">
+    <div class="manage-header__content">
+      <p class="manage-breadcrumb mb-1">Teacher workspace
+        {% if course.is_visible %}
+        <span class="badge bg-success">Public</span>
+        {% else %}
+        <span class="badge bg-secondary">Hidden</span>
+        {% endif %}
+      </p>
+      <h1 class="manage-title mb-1">{{ course.title }}</h1>
+      <p class="manage-subtitle mb-0">Manage enrolments, upload materials and keep the course experience polished.</p>
+    </div>
+    <div class="manage-header__actions">
+      <a class="btn btn-light" href="{% url 'home' %}">Back</a>
+      <a class="btn btn-outline-light" href="{% url 'course-detail' course.id %}">Student view</a>
+      <a class="btn btn-outline-light" href="{% url 'course-room' course.id %}">Study room</a>
+
+      <form method="post" action="{% url 'teacher-course-toggle-visibility' course.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-light">
+          {% if course.is_visible %}Hide course{% else %}Show course{% endif %}
+        </button>
+      </form>
+
+      <form method="post" action="{% url 'teacher-course-delete' course.id %}"
+        onsubmit="return confirm('Delete this course permanently?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger">Delete course</button>
+      </form>
+    </div>
+  </section>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0 manage-card mb-4">
+        <div class="card-body">
+          <div class="manage-section-head mb-3">
+            <div>
+              <h4 class="manage-section-title">Lessons & materials</h4>
+              <p class="manage-section-subtitle mb-2">Group materials into lessons and control the learning flow.</p>
+            </div>
+            <a class="btn btn-primary" href="{% url 'teacher-material-upload' course.id %}">Upload material</a>
+          </div>
+
+          <form method="post" action="{% url 'teacher-lesson-create' course.id %}" class="row g-3 mb-4">
+            {% csrf_token %}
+            <div class="col-md-8">
+              <label class="form-label">Lesson title</label>
+              {{ lesson_form.title }}
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">Order</label>
+              {{ lesson_form.order }}
+            </div>
+            <div class="col-md-2 d-grid">
+              <label class="form-label opacity-0">Create</label>
+              <button type="submit" class="btn btn-outline-primary">Create lesson</button>
+            </div>
+          </form>
+
+          {% if lessons %}
+          <div class="lesson-stack">
+            {% for lesson in lessons %}
+            <details class="lesson-card">
+              <summary class="lesson-summary">
+                <div class="lesson-summary__left">
+                  <div class="lesson-number">{{ lesson.order }}</div>
+                  <div class="lesson-summary__text">
+                    <div class="lesson-name">{{ lesson.title }}</div>
+                    <div class="lesson-submeta">
+                      {{ lesson.materials.all|length }} material{{ lesson.materials.all|length|pluralize }}
+                    </div>
+                  </div>
+                </div>
+              </summary>
+
+              <div class="lesson-body">
+                <div class="lesson-toolbar">
+                  <div class="lesson-toolbar__group">
+                    <button type="button" class="btn btn-outline-secondary btn-sm js-move-btn"
+                      data-url="{% url 'teacher-lesson-move-up' course.id lesson.id %}">
+                      ↑
+                    </button>
+
+                    <button type="button" class="btn btn-outline-secondary btn-sm js-move-btn"
+                      data-url="{% url 'teacher-lesson-move-down' course.id lesson.id %}">
+                      ↓
+                    </button>
+
+                    <a class="btn btn-outline-secondary btn-sm"
+                      href="{% url 'teacher-lesson-edit' course.id lesson.id %}">
+                      Edit lesson
+                    </a>
+
+                    <a class="btn btn-primary btn-sm"
+                      href="{% url 'teacher-material-upload' course.id %}?lesson={{ lesson.id }}">
+                      Add material
+                    </a>
+                  </div>
+                </div>
+
+                {% if lesson.materials.all %}
+                <div class="material-list">
+                  {% for material in lesson.materials.all %}
+                  <div class="material-row">
+                    <div class="material-row__main">
+                      <div class="material-row__title">{{ material.title }}</div>
+                      <div class="material-row__meta">
+                        <span>Order {{ material.order }}</span>
+                        <span class="type-pill {{ material.material_type }}">{{
+                          material.get_material_type_display}}</span>
+                      </div>
+                    </div>
+
+                    <div class="material-row__actions">
+                      <button type="button" class="btn btn-outline-secondary btn-sm js-move-btn"
+                        data-url="{% url 'teacher-material-move-up' course.id material.id %}">
+                        ↑
+                      </button>
+
+                      <button type="button" class="btn btn-outline-secondary btn-sm js-move-btn"
+                        data-url="{% url 'teacher-material-move-down' course.id material.id %}">
+                        ↓
+                      </button>
+
+                      <a class="btn btn-outline-secondary btn-sm"
+                        href="{% url 'teacher-material-edit' course.id material.id %}">
+                        Edit
+                      </a>
+
+                      <a class="btn btn-outline-primary btn-sm" href="{{ material.file.url }}" target="_blank">
+                        Open
+                      </a>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state-box">No materials in this lesson yet.</div>
+                {% endif %}
+              </div>
+            </details>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="empty-state-box">No lessons yet. Create your first lesson above.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0 manage-card">
+        <div class="card-body">
+          <div class="manage-section-head mb-3">
+            <div>
+              <h4 class="manage-section-title">Course overview</h4>
+              <p class="manage-section-subtitle mb-0">What students see when they open the course.</p>
+            </div>
+          </div>
+          <div class="empty-state-box" style="text-align:left;">
+            <strong>Description</strong><br>
+            {{ course.description|default:"No description has been added yet."|linebreaks }}
+          </div>
+          <a class="btn btn-outline-light" href="{% url 'teacher-course-edit' course.id %}">Edit overview</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 manage-card mb-4">
+        <div class="card-body">
+          <div class="manage-section-head mb-3">
+            <div>
+              <h4 class="manage-section-title">Pending requests</h4>
+              <p class="manage-section-subtitle mb-0">Review new enrolment requests.</p>
+            </div>
+          </div>
+
+          {% if pending_enrolments %}
+          <div class="request-stack">
+            {% for enrolment in pending_enrolments %}
+            <article class="request-card">
+              <div class="request-card__top">
+                <div>
+                  <div class="request-card__name">
+                    {{ enrolment.student.display_name|default:enrolment.student.username }}
+                  </div>
+                  <div class="request-card__meta">
+                    <span>{{ enrolment.student.username }}</span>
+                    {% if enrolment.student.email %}<span>{{ enrolment.student.email }}</span>{% endif %}
+                  </div>
+                </div>
+
+                <span class="badge bg-warning text-dark">Pending</span>
+              </div>
+
+              <div class="request-card__submeta">
+                Requested on {{ enrolment.created_at|date:"d M Y, H:i" }}
+              </div>
+
+              <form method="post" action="{% url 'teacher-enrolment-update' course.id enrolment.id %}"
+                class="request-card__form">
+                {% csrf_token %}
+                <div class="form-row mb-2">
+                  <label class="form-label">Remark (optional)</label>
+                  <input type="text" class="form-control" name="remark"
+                    placeholder="Add a note for reject / block if needed">
+                </div>
+
+                <div class="request-card__actions">
+                  <button class="btn btn-success btn-sm" name="action" value="approve">Approve</button>
+                  <button class="btn btn-outline-danger btn-sm" name="action" value="reject">Reject</button>
+                  <button class="btn btn-danger btn-sm" name="action" value="block">Block</button>
+                </div>
+              </form>
+            </article>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="empty-state-box">No pending requests.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0 manage-card">
+        <div class="card-body">
+          <div class="manage-section-head mb-3">
+            <div>
+              <h4 class="manage-section-title">Active students</h4>
+              <p class="manage-section-subtitle mb-0">Search and manage approved learners.</p>
+            </div>
+          </div>
+
+          <form method="get" class="mb-3">
+            <input type="text" class="form-control" name="q" value="{{ q }}"
+              placeholder="Search by username, display name or email">
+          </form>
+
+          {% if active_enrolments %}
+          <div class="table-responsive">
+            <table class="table manage-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for enrolment in active_enrolments %}
+                <tr>
+                  <td>
+                    {{ enrolment.student.display_name|default:enrolment.student.username }}
+                  <br><span class="manage-section-subtitle">@{{ enrolment.student.username }}</span></td>
+                  <td>{{ enrolment.student.email|default:"-" }}</td>
+                  <td>
+                    <a class="btn btn-outline-secondary btn-sm mb-1"
+                      href="{% url 'user-profile' enrolment.student.username %}">
+                      View profile
+                    </a>
+                    <form method="post" action="{% url 'teacher-enrolment-update' course.id enrolment.id %}"
+                      onsubmit="return confirm('Remove this student from the course?');">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="remove">
+                      <button class="btn btn-outline-danger btn-sm" type="submit">
+                        Remove
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="empty-state-box">No active students found.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + "=")) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  const csrftoken = getCookie("csrftoken");
+
+  async function postMove(url) {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrftoken,
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error("Move request failed");
+    }
+
+    return response.json();
+  }
+
+  document.querySelectorAll(".js-move-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const url = btn.dataset.url;
+      if (!url) return;
+
+      try {
+        await postMove(url);
+        const lessonCard = btn.closest(".lesson-card");
+        if (lessonCard) {
+          const container = lessonCard.parentElement;
+          const cards = Array.from(container.children);
+          const currentIndex = cards.indexOf(lessonCard);
+
+          if (btn.textContent.includes("↑") && currentIndex > 0) {
+            container.insertBefore(lessonCard, cards[currentIndex - 1]);
+          } else if (btn.textContent.includes("↓") && currentIndex < cards.length - 1) {
+            container.insertBefore(cards[currentIndex + 1], lessonCard);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  });
+</script>
+{% endblock %}

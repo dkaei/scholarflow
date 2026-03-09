@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}ScholarFlow{% endblock %}
+
+{% block content %}
+<section class="home-hero">
+  <div class="home-hero__content">
+    <span class="hero-panel__eyebrow">ScholarFlow</span>
+    <h1 class="home-hero__title">Structured online learning with a polished, modern classroom experience.</h1>
+    <p class="home-hero__subtitle">
+      Discover courses, learn through organised lesson content, connect in study rooms and manage teaching with clarity.
+    </p>
+
+    <div class="home-hero__actions">
+      <a class="button" href="{% url 'signup' %}">Get started</a>
+      <a class="button button--ghost" href="{% url 'login' %}">Log in</a>
+    </div>
+  </div>
+
+  <div class="home-hero__visual">
+    <article class="hero-photo hero-photo--large">
+      <img src="{% static 'img/home-mentor.jpg' %}" alt="Teacher supporting a student with laptop work">
+    </article>
+
+    <article class="hero-photo hero-photo--top">
+      <img src="{% static 'img/home-tutor.jpg' %}" alt="Tutor teaching through an online video setup">
+    </article>
+
+    <article class="hero-photo hero-photo--bottom">
+      <img src="{% static 'img/home-online-class.jpg' %}" alt="Student attending an online lesson">
+    </article>
+  </div>
+</section>
+
+<section class="feature-grid">
+
+  <article class="feature-card">
+    <div class="feature-icon">📚</div>
+    <h3 class="feature-title">Structured lessons</h3>
+    <p class="feature-desc">
+      Courses are organised into lessons with materials grouped logically,
+      making it easy for students to follow a clear learning path.
+    </p>
+  </article>
+
+  <article class="feature-card">
+    <div class="feature-icon">🎥</div>
+    <h3 class="feature-title">Interactive learning</h3>
+    <p class="feature-desc">
+      Watch videos, view documents and learn directly inside the platform
+      without downloading files or switching tools.
+    </p>
+  </article>
+
+  <article class="feature-card">
+    <div class="feature-icon">🧑‍🏫</div>
+    <h3 class="feature-title">Teacher control</h3>
+    <p class="feature-desc">
+      Teachers can manage enrolments, organise materials and guide students
+      through structured courses and study rooms.
+    </p>
+  </article>
+
+</section>
+{% endblock %}

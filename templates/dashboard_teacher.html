@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Teacher hub{% endblock %}
+{% block content %}
+<section class="hero-panel mb-4">
+  <span class="hero-panel__eyebrow">Teacher hub</span>
+  <h1 class="hero-panel__title">Lead your courses with clarity and structure.</h1>
+  <p class="hero-panel__subtitle">Create courses, upload materials, review enrolments and guide students in the study
+    room.</p>
+  <div class="hero-panel__actions">
+    <a class="button" href="{% url 'teacher-course-create' %}">Create course</a>
+    <a class="button button--ghost" href="{% url 'course-list' %}">All courses</a>
+  </div>
+</section>
+
+<section class="course-grid">
+  {% for c in courses %}
+  <article class="course-card">
+    <div class="course-card__top">
+      <div>
+        {% if c.is_visible %}
+        <span class="badge bg-success mb-2">Public</span>
+        {% else %}
+        <span class="badge bg-secondary mb-2">Hidden</span>
+        {% endif %}
+        <h3 class="course-card__title">{{ c.title }}</h3>
+        <div class="course-card__meta">{{ c.created_at|date:"d M Y, H:i" }}</div>
+      </div>
+      <span class="badge good">Owned by you</span>
+    </div>
+    <p class="course-card__desc">{{ c.description|default:"No description yet."|truncatechars:180 }}</p>
+    <div class="course-card__actions">
+      <a class="button" href="{% url 'teacher-course-manage' c.id %}">Manage course</a>
+      <a class="button button--ghost" href="{% url 'course-room' c.id %}">Study room</a>
+    </div>
+  </article>
+  {% empty %}
+  <article class="card">
+    <div class="card-body">No courses yet. Create your first course to begin.</div>
+  </article>
+  {% endfor %}
+</section>
+{% endblock %}

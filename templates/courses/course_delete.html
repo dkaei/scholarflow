@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Delete course{% endblock %}
+
+{% block content %}
+<div class="auth-shell my-4">
+  <section class="hero-panel mb-4">
+    <span class="hero-panel__eyebrow">Teacher workspace</span>
+    <h1 class="hero-panel__title">Delete course</h1>
+    <p class="hero-panel__subtitle">This action cannot be undone.</p>
+  </section>
+
+  <div class="card auth-card">
+    <div class="card-body">
+      <p>Are you sure you want to delete <strong>{{ course.title }}</strong>?</p>
+
+      <form method="post" class="row mt-4">
+        {% csrf_token %}
+        <button class="button" type="submit">Delete course</button>
+        <a class="button button--ghost" href="{% url 'teacher-course-manage' course.id %}">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

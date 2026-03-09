@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Create account{% endblock %}
+{% block content %}
+<div class="auth-shell my-4" style="max-width: 820px;">
+  <div class="hero-panel mb-4">
+    <span class="hero-panel__eyebrow">Get started</span>
+    <h1 class="hero-panel__title">Create your ScholarFlow account</h1>
+    <p class="hero-panel__subtitle">Join as a student or teacher and start using the e-learning platform right away.</p>
+  </div>
+
+  <div class="card auth-card"><div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="grid cols2">
+        <div class="field"><label for="id_username">Username</label>{{ form.username }}{% for error in form.username.errors %}<div class="help text-danger">{{ error }}</div>{% endfor %}</div>
+        <div class="field"><label for="id_display_name">Display name</label>{{ form.display_name }}{% for error in form.display_name.errors %}<div class="help text-danger">{{ error }}</div>{% endfor %}</div>
+        <div class="field"><label for="id_email">Email</label>{{ form.email }}{% for error in form.email.errors %}<div class="help text-danger">{{ error }}</div>{% endfor %}</div>
+        <div class="field"><label for="id_role">Role</label>{{ form.role }}{% for error in form.role.errors %}<div class="help text-danger">{{ error }}</div>{% endfor %}</div>
+      </div>
+      <div class="field"><label for="id_bio">Bio</label>{{ form.bio }}{% for error in form.bio.errors %}<div class="help text-danger">{{ error }}</div>{% endfor %}</div>
+      <div class="grid cols2">
+        <div class="field"><label for="id_password1">Password</label>{{ form.password1 }}{% for error in form.password1.errors %}<div class="help text-danger">{{ error }}</div>{% endfor %}</div>
+        <div class="field"><label for="id_password2">Confirm password</label>{{ form.password2 }}{% for error in form.password2.errors %}<div class="help text-danger">{{ error }}</div>{% endfor %}</div>
+      </div>
+      {% for error in form.non_field_errors %}<div class="help text-danger mb-3">{{ error }}</div>{% endfor %}
+      <div class="row mt-4">
+        <button class="button" type="submit">Create account</button>
+        <a class="button button--ghost" href="{% url 'login' %}">Already have an account?</a>
+      </div>
+    </form>
+  </div></div>
+</div>
+{% endblock %}

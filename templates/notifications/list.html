@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+<section class="hero-panel mb-4"><span class="hero-panel__eyebrow">Inbox</span><h1 class="hero-panel__title">Notifications</h1><p class="hero-panel__subtitle">Stay updated on enrolments, course materials and teaching actions.</p></section>
+<section class="notification-list">
+  {% for n in notifications %}
+    <article class="notification-item">
+      <div><div style="font-weight:700;">{{ n.message }}</div><div class="notification-item__meta">{% if n.is_read %}<span class="badge good">Read</span>{% else %}<span class="badge warn">Unread</span>{% endif %}<span class="text-muted small">{{ n.created_at|date:"d M Y, H:i" }}</span></div></div>
+      <div class="notification-item__actions">{% if n.link %}<a class="button button--ghost" href="{% url 'notification-open' n.id %}">Open</a>{% endif %}<form method="post" action="{% url 'notification-delete' n.id %}">{% csrf_token %}<button type="submit" class="icon-btn" aria-label="Remove">×</button></form></div>
+    </article>
+  {% empty %}<article class="empty-state-box">No notifications yet.</article>{% endfor %}
+</section>
+{% endblock %}

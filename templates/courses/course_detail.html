@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }}{% endblock %}
+{% block content %}
+<div class="course-learn-page my-4">
+  <div class="learn-topbar mb-4">
+    <div>
+      <p class="learn-topbar__eyebrow mb-1">Course experience</p>
+      <h1 class="learn-topbar__title mb-1">{{ course.title }}</h1>
+      <div>
+        <p class="learn-topbar__subtitle mb-4">
+          Teacher: <b>{{ course.teacher.display_name|default:course.teacher.username }}</b>
+        </p>
+        <a class="button button--ghost" href="{% url 'user-profile' course.teacher.username %}">
+          View teacher profile
+        </a>
+      </div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn btn-outline-light" href="{% url 'course-list' %}">Back to courses</a>
+      <a class="btn btn-light" href="{% url 'course-room' course.id %}">Open study room</a>
+      {% if user.role == "STUDENT" %}
+      {% if enrolment %}
+      {% if enrolment.status == "PENDING" %}<span class="badge bg-warning text-dark align-self-center">Pending
+        approval</span>{% endif %}
+      {% if enrolment.status == "ACTIVE" %}<span class="badge bg-success align-self-center">Enrolled</span>{% endif %}
+      {% if enrolment.status == "REJECTED" %}<span class="badge bg-danger align-self-center">Rejected</span>{% endif %}
+      {% if enrolment.status == "REMOVED" %}<span class="badge bg-secondary align-self-center">Removed</span>{% endif %}
+      {% if enrolment.status == "BLOCKED" %}<span class="badge bg-danger align-self-center">Blocked</span>{% endif %}
+      {% else %}
+      <form method="post" action="{% url 'course-enrol' course.id %}">{% csrf_token %}<button type="submit"
+          class="btn btn-light">Request enrolment</button></form>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <h3 class="mb-2">Course description</h3>
+      <div class="text-muted">{{ course.description|default:"No description has been provided yet."|linebreaks }}</div>
+      {% if enrolment and enrolment.remark %}
+      <div class="empty-state-box" style="margin-top:14px; text-align:left;"><strong>Status remark</strong><br>{{ enrolment.remark }}</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="learn-layout-wrap {% if not show_learning_area %}is-locked{% endif %}">
+    <div class="learn-layout">
+
+      <aside class="learn-sidebar">
+        <div class="learn-sidebar__head">
+          <h3 class="mb-1">Course materials</h3>
+          <p class="text-muted mb-0">Browse lessons and select a material to open it in the viewer.</p>
+        </div>
+
+        <div class="learn-sidebar__content">
+          {% if lessons %}
+          {% for lesson in lessons %}
+          <details class="learn-lesson js-lesson-accordion">
+            <summary class="learn-lesson__summary">
+              <div class="learn-lesson__title">
+                {{ lesson.order }}. {{ lesson.title }}
+              </div>
+              <div class="learn-lesson__meta">
+                {{ lesson.materials.all|length }} material{{ lesson.materials.all|length|pluralize }}
+              </div>
+            </summary>
+
+            <div class="learn-lesson__materials">
+              {% for material in lesson.materials.all %}
+              <button type="button" class="material-nav-btn" data-material-id="{{ material.id }}"
+                data-title="{{ material.title|escapejs }}" data-url="{% url 'material-view' course.id material.id %}"
+                data-download="{% url 'material-download' course.id material.id %}"
+                data-type="{{ material.material_type }}">
+                <span class="material-nav-btn__title">{{ material.title }}</span>
+                <span class="material-nav-btn__type">{{ material.get_material_type_display }}<br>{{ material.created_at|date:"d M Y, H:i" }}</span>
+              </button>
+              {% empty %}
+              <div class="empty-state-box">No materials in this lesson yet.</div>
+              {% endfor %}
+            </div>
+          </details>
+          {% endfor %}
+          {% else %}
+          <div class="empty-state-box">No lessons or materials yet.</div>
+          {% endif %}
+        </div>
+      </aside>
+
+      <section class="learn-viewer">
+        <div class="learn-viewer__head">
+          <h4 id="viewer-title" class="mb-1">Select a material</h4>
+          <div id="viewer-type" class="content-meta"></div>
+        </div>
+
+        <div class="learn-viewer__body" id="material-viewer">
+          <div class="viewer-placeholder">Choose a material from the left to start learning.</div>
+        </div>
+
+        <div class="learn-viewer__footer">
+          <a id="viewer-download" href="#" class="button button--ghost d-none" target="_blank">Open file</a>
+        </div>
+      </section>
+
+    </div>
+
+    {% if not show_learning_area %}
+    <div class="learn-lock-overlay">
+      <div class="learn-lock-card">
+        <div class="learn-lock-icon">🔒</div>
+        <h3>Course content locked</h3>
+        <p>
+          This learning area becomes available after your enrolment is approved.
+        </p>
+
+        {% if enrolment and enrolment.status == "PENDING" %}
+        <span class="badge bg-warning text-dark">Request pending</span>
+        {% elif enrolment and enrolment.status == "REJECTED" %}
+        <span class="badge bg-danger">Request rejected</span>
+        {% elif enrolment and enrolment.status == "REMOVED" %}
+        <span class="badge bg-secondary">Access removed</span>
+        {% elif not enrolment and user.role == "STUDENT" %}
+        <form method="post" action="{% url 'course-enrol' course.id %}">
+          {% csrf_token %}
+          <button type="submit" class="button">Request enrolment</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card border-0 shadow-sm mt-4">
+    <div class="card-body">
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h3 class="mb-0">Feedback</h3>
+        {% if user.role == "STUDENT" and enrolment and enrolment.status == "ACTIVE" %}<a class="button button--ghost"
+          href="{% url 'course-feedback' course.id %}">Leave feedback</a>{% endif %}
+      </div>
+      {% for f in feedbacks %}
+      <div class="course-card" style="padding:16px; margin-bottom:10px;">
+        <div class="course-card__top">
+          <div>
+            <div class="course-card__title" style="font-size:1rem;">{{ f.student.display_name|default:f.student.username }}</div>
+            <div class="course-card__meta">{{ f.created_at|date:"d M Y, H:i" }}</div>
+          </div><span class="badge good">{{ f.rating }} / 5</span>
+        </div>
+        <div class="course-card__desc">{{ f.comment|default:"No comment provided."|linebreaks }}</div>
+      </div>
+      {% empty %}<div class="empty-state-box">No feedback yet.</div>{% endfor %}
+    </div>
+  </div>
+</div>
+
+<script>
+  const viewerTitle = document.getElementById("viewer-title");
+  const viewerType = document.getElementById("viewer-type");
+  const viewerBody = document.getElementById("material-viewer");
+  const viewerDownload = document.getElementById("viewer-download");
+
+  function guessType(type, url) {
+    if (type && type !== "file") return type;
+
+    const lowerUrl = (url || "").toLowerCase();
+
+    if (lowerUrl.match(/\.(mp4|webm|ogg|mov)(\?|$)/)) return "video";
+    if (lowerUrl.match(/\.(jpg|jpeg|png|gif|webp|bmp)(\?|$)/)) return "image";
+    if (lowerUrl.match(/\.pdf(\?|$)/)) return "pdf";
+
+    return "file";
+  }
+
+  function renderMaterial(title, type, url, downloadUrl) {
+    const resolvedType = guessType(type, url);
+
+    viewerTitle.textContent = title;
+    viewerType.textContent = resolvedType ? resolvedType.toUpperCase() : "";
+    viewerDownload.href = downloadUrl;
+    viewerDownload.classList.remove("d-none");
+
+    if (resolvedType === "video") {
+      viewerBody.innerHTML = `
+        <video controls width="100%" class="viewer-media">
+          <source src="${url}">
+          Your browser does not support the video tag.
+        </video>
+      `;
+    } else if (resolvedType === "image") {
+      viewerBody.innerHTML = `
+        <img src="${url}" alt="${title}" class="viewer-media viewer-image">
+      `;
+    } else if (resolvedType === "pdf") {
+      viewerBody.innerHTML = `
+        <iframe src="${url}" class="viewer-pdf"></iframe>
+      `;
+    } else {
+      viewerBody.innerHTML = `
+        <div class="viewer-file-fallback">
+          <p>This file cannot be previewed here.</p>
+          <a href="${downloadUrl}" class="button" target="_blank">Download file</a>
+        </div>
+      `;
+    }
+  }
+
+  document.querySelectorAll(".material-nav-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".material-nav-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      renderMaterial(
+        btn.dataset.title,
+        btn.dataset.type,
+        btn.dataset.url,
+        btn.dataset.download
+      );
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% load static %}
+<!doctype html>
+<html lang="en-GB">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="{% static 'favicon.svg' %}">
+  <title>{% block title %}ScholarFlow{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  {% block head %}{% endblock %}
+</head>
+
+<body>
+  <div class="site-shell">
+    <header class="site-header">
+      <div class="site-container site-header__inner">
+        <a class="site-brand" href="{% url 'home' %}">
+          <span class="site-brand__mark">SF</span>
+          <span>
+            <strong>ScholarFlow</strong>
+          </span>
+        </a>
+
+        <nav class="site-nav" aria-label="Primary">
+          <a href="{% url 'home' %}"
+            class="site-nav__link {% if request.resolver_match.url_name == 'home' %}is-active{% endif %}">
+            Home
+          </a>
+          <a href="{% url 'course-list' %}"
+            class="site-nav__link {% if request.resolver_match.url_name == 'course-list' %}is-active{% endif %}">
+            Courses
+          </a>
+
+          {% if user.is_authenticated %}
+          {% if user.role == "TEACHER" %}
+          <a href="{% url 'user-search' %}"
+            class="site-nav__link {% if request.resolver_match.url_name == 'user-search' %}is-active{% endif %}">
+            Search users
+          </a>
+          {% endif %}
+
+          <a href="{% url 'profile' %}"
+            class="site-nav__link {% if request.resolver_match.url_name == 'user-profile' %}is-active{% endif %}">
+            Profile
+          </a>
+          <a href="{% url 'notification-list' %}"
+            class="site-nav__link site-nav__link--notif {% if request.resolver_match.url_name == 'notification-list' %}is-active{% endif %}">
+            Notifications
+            {% if notif_unread_count %}<span class="site-notif-dot"></span>{% endif %}
+          </a>
+          {% endif %}
+        </nav>
+
+        <div class="site-actions">
+          {% if user.is_authenticated %}
+          <div class="site-userpill">
+            <span class="site-userpill__name">{{ user.display_name|default:user.username }}</span>
+            <span class="site-userpill__meta">{{ user.get_role_display }}</span>
+          </div>
+          <a class="button button--ghost" href="{% url 'logout' %}">Log out</a>
+          {% else %}
+          <a class="button button--ghost" href="{% url 'login' %}">Log in</a>
+          <a class="button" href="{% url 'signup' %}">Sign up</a>
+          {% endif %}
+        </div>
+      </div>
+    </header>
+
+    <main class="site-main">
+      <div class="site-container">
+        {% if messages %}
+        <div class="flash-stack">
+          {% for message in messages %}
+          <div class="flash flash--{{ message.tags|default:'info' }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+</body>
+
+</html>

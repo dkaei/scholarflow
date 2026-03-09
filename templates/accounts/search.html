@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Search users{% endblock %}
+
+{% block content %}
+<section class="hero-panel mb-4">
+  <span class="hero-panel__eyebrow">Teacher tools</span>
+  <h1 class="hero-panel__title">Search users</h1>
+  <p class="hero-panel__subtitle">Find students or teachers by name, username or email.</p>
+</section>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="grid cols2">
+      <div class="form-row">
+        <label class="form-label">Search</label>
+        <input type="text" name="q" value="{{ q }}" placeholder="Username, display name or email">
+      </div>
+
+      <div class="form-row">
+        <label class="form-label">Role</label>
+        <select name="role">
+          <option value="">All roles</option>
+          <option value="STUDENT" {% if role == "STUDENT" %}selected{% endif %}>Student</option>
+          <option value="TEACHER" {% if role == "TEACHER" %}selected{% endif %}>Teacher</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label class="form-label">Filter by your course</label>
+        <select name="course">
+          <option value="">All courses</option>
+          {% for c in teacher_courses %}
+            <option value="{{ c.id }}" {% if selected_course and selected_course.id == c.id %}selected{% endif %}>
+              {{ c.title }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-row d-flex align-items-end gap-2">
+        <button type="submit" class="button">Search</button>
+        <a href="{% url 'user-search' %}" class="button button--ghost">Clear</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h4 class="mb-3">Results</h4>
+
+    {% if items %}
+      <div class="notification-list">
+        {% for item in items %}
+          <article class="notification-item">
+            <div>
+              <strong>{{ item.display_name|default:item.username }}</strong>
+              <div class="notification-item__meta">
+                <span class="badge bg-secondary">{{ item.get_role_display }}</span>
+                <span class="text-muted">{{ item.username }}</span>
+                {% if item.email %}<span class="text-muted">{{ item.email }}</span>{% endif %}
+              </div>
+            </div>
+            <div class="notification-item__actions">
+              <a class="button button--ghost" href="{% url 'user-profile' item.username %}">View profile</a>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state-box">No users found.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

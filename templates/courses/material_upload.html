@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Upload material{% endblock %}
+{% block content %}
+<div class="auth-shell my-4">
+  <div class="hero-panel mb-4">
+    <span class="hero-panel__eyebrow">Teacher workspace</span>
+    <h1 class="hero-panel__title">Upload learning material</h1>
+    <p class="hero-panel__subtitle">Assign the file to a lesson and control the order students see it in.</p>
+  </div>
+
+  <div class="card auth-card">
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {% for field in form %}
+          <div class="form-row">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}
+              <div class="help text-danger">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endfor %}
+
+        <div class="row mt-4">
+          <button class="button" type="submit">Upload material</button>
+          <a class="button button--ghost" href="{% url 'teacher-course-manage' course.id %}">Back to workspace</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

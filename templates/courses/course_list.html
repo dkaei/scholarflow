@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load course_extras %}
+{% block title %}Courses{% endblock %}
+{% block content %}
+<section class="hero-panel mb-4">
+  <span class="hero-panel__eyebrow">Course catalogue</span>
+  <h1 class="hero-panel__title">Explore the courses on ScholarFlow.</h1>
+  <p class="hero-panel__subtitle">View course information, request enrolment and jump back into active learning spaces.
+  </p>
+</section>
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="course-searchbar">
+      <input
+        type="text"
+        name="q"
+        value="{{ q }}"
+        placeholder="Search by course title"
+      >
+      <button type="submit" class="button">Search</button>
+      {% if q %}
+        <a href="{% url 'course-list' %}" class="button button--ghost">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+<section class="course-grid">
+  {% for c in courses %}
+  {% if c.is_visible %}
+  <article class="course-card">
+    <div class="course-card__top">
+      <div>
+        <h3 class="course-card__title">{{ c.title }}</h3>
+        <div class="course-card__meta">Teacher: {{ c.teacher.display_name|default:c.teacher.username }}</div>
+      </div>
+      {% if user.role == "STUDENT" and my_enrolments|get_item:c.id %}
+      {% with e=my_enrolments|get_item:c.id %}
+      {% if e.status == "ACTIVE" %}<span class="badge good">Enrolled</span>{% endif %}
+      {% if e.status == "PENDING" %}<span class="badge warn">Pending</span>{% endif %}
+      {% if e.status == "BLOCKED" %}<span class="badge bad">Blocked</span>{% endif %}
+      {% if e.status == "REMOVED" %}<span class="badge bg-secondary">Removed</span>{% endif %}
+      {% if e.status == "REJECTED" %}<span class="badge bad">Rejected</span>{% endif %}
+      {% endwith %}
+      {% endif %}
+    </div>
+    <p class="course-card__desc">{{ c.description|default:"No course description has been added yet."|truncatechars:180 }}</p>
+    <div class="course-card__actions">
+      <a class="button button--ghost" href="{% url 'course-detail' c.id %}">View course</a>
+      {% if user.role == "STUDENT" %}
+      {% if my_enrolments and my_enrolments|get_item:c.id %}
+      {% with e=my_enrolments|get_item:c.id %}
+      {% if e.status == "ACTIVE" %}
+      <!-- <a class="button" href="{% url 'course-room' c.id %}">Study room</a> -->
+      {% elif e.status == "REJECTED" or e.status == "REMOVED" %}
+      <form method="post" action="{% url 'course-enrol' c.id %}">{% csrf_token %}<button class="button"
+          type="submit">Request again</button></form>
+      {% endif %}
+      {% endwith %}
+      {% else %}
+      <form method="post" action="{% url 'course-enrol' c.id %}">{% csrf_token %}<button class="button"
+          type="submit">Request enrolment</button></form>
+      {% endif %}
+      {% elif user.role == "TEACHER" and c.teacher_id == user.id %}
+      <!-- <a class="button" href="{% url 'teacher-course-manage' c.id %}">Manage</a> -->
+      {% endif %}
+    </div>
+  </article>
+  {% endif %}
+  {% empty %}
+  <article class="card">
+    <div class="card-body">No courses yet.</div>
+  </article>
+  {% endfor %}
+</section>
+{% endblock %}

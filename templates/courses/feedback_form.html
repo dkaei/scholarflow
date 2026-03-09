@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Leave feedback{% endblock %}
+{% block content %}
+<div class="auth-shell my-4" style="max-width:760px;">
+  <section class="hero-panel mb-4">
+    <span class="hero-panel__eyebrow">Course feedback</span>
+    <h1 class="hero-panel__title">Share your learning experience</h1>
+    <p class="hero-panel__subtitle">Your feedback helps improve this course for future learners.</p>
+  </section>
+  <div class="card auth-card"><div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="field"><label for="id_rating">Rating (1 to 5)</label>{{ form.rating }}</div>
+      <div class="field"><label for="id_comment">Comment</label>{{ form.comment }}</div>
+      <div class="row mt-4">
+        <button class="button" type="submit">Submit feedback</button>
+        <a class="button button--ghost" href="{% url 'course-detail' course.id %}">Back to course</a>
+      </div>
+    </form>
+  </div></div>
+</div>
+{% endblock %}
